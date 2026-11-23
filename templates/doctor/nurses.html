@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Available Nurses - Doctor MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Nursing Staff Directory</h2>
+    <p class="page-subtitle">Hospital nurses available for inpatient care and task assignments.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Nurse</th>
+          <th>Department</th>
+          <th>Qualification</th>
+          <th>License Number</th>
+          <th>Contact</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in nurses %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="user-avatar-badge">{{ n.name[:2] | upper }}</div>
+              <div>
+                <div class="fw-semibold text-dark">{{ n.name }}</div>
+                <small class="text-muted">{{ n.gender }}</small>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge bg-light text-dark border">{{ n.department_name }}</span></td>
+          <td>{{ n.qualification }}</td>
+          <td><code>{{ n.license_number }}</code></td>
+          <td>
+            <div class="small"><i class="fa-solid fa-phone text-muted me-1"></i>{{ n.phone }}</div>
+            <small class="text-muted"><i class="fa-regular fa-envelope me-1"></i>{{ n.email }}</small>
+          </td>
+          <td>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">{{ n.employment_status }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

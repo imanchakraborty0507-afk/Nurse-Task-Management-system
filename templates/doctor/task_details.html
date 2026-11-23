@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Task Audit & Details - Doctor MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{{ url_for('doctor.tasks') }}" class="text-secondary small text-decoration-none mb-1 d-inline-block">
+      <i class="fa-solid fa-arrow-left me-1"></i> Back to Task List
+    </a>
+    <h2 class="page-title">{{ task.task_title }}</h2>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge {{ task.priority | priority_badge }} fs-6">{{ task.priority }} PRIORITY</span>
+    <span class="badge {{ task.status | status_badge }} fs-6">{{ task.status }}</span>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card mb-4">
+      <div class="card-header fw-bold">
+        <i class="fa-solid fa-clipboard-check text-primary me-2"></i>Clinical Prescription Specifications
+      </div>
+      <div class="card-body">
+        <h6 class="fw-bold mb-2">Physician Instructions</h6>
+        <div class="p-3 bg-light rounded border mb-4" style="white-space: pre-wrap;">{{ task.description }}</div>
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="small text-muted fw-semibold">Target Patient</div>
+            <div class="fw-bold">{{ task.patient_name }}</div>
+            <small class="text-secondary">{{ task.ward_name }} &bull; Bed {{ task.bed_number }}</small>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-muted fw-semibold">Assigned Care Nurse</div>
+            <div class="fw-bold">{{ task.nurse_name }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-muted fw-semibold">Prescription Date</div>
+            <div>{{ task.created_at | format_dt }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-muted fw-semibold">Required Completion Due Time</div>
+            <div class="{% if task.is_overdue %}text-danger fw-bold{% endif %}">
+              {{ task.due_time | format_dt }}
+              {% if task.is_overdue %}<span class="badge bg-danger ms-1">OVERDUE</span>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes & Nurse feedback -->
+    <div class="card">
+      <div class="card-header fw-bold">
+        <i class="fa-regular fa-comment-dots text-teal me-2"></i>Nurse Observations & Logged Notes
+      </div>
+      <div class="card-body">
+        {% if task.notes %}
+          <div class="p-3 bg-light rounded border" style="white-space: pre-wrap;">{{ task.notes }}</div>
+        {% else %}
+          <p class="text-muted small mb-0">No nurse notes recorded yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit trail -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header fw-bold">
+        <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Status Progression Audit Trail
+      </div>
+      <div class="card-body p-3" style="max-height: 520px; overflow-y: auto;">
+        <div class="timeline">
+          {% for log in logs %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="d-flex justify-content-between align-items-start">
+              <strong class="small text-dark">{{ log.username }} ({{ log.role }})</strong>
+              <small class="text-muted">{{ log.timestamp | format_dt("%H:%M") }}</small>
+            </div>
+            <div class="small text-secondary">{{ log.comment }}</div>
+            {% if log.new_status %}
+              <span class="badge {{ log.new_status | status_badge }} mt-1" style="font-size: 0.65rem;">{{ log.new_status }}</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

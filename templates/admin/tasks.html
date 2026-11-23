@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Master Task Board - Admin MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Master Clinical Task Board</h2>
+    <p class="page-subtitle">Hospital-wide oversight of nurse assignments, clinical instructions, and deadlines.</p>
+  </div>
+</div>
+
+<!-- Task Status Counters -->
+<div class="row g-2 mb-4">
+  <div class="col-6 col-md">
+    <a href="{{ url_for('admin.tasks') }}" class="card text-center p-2 text-decoration-none {% if not current_status %}border-primary bg-light{% endif %}">
+      <div class="fs-5 fw-bold text-dark">{{ counts.total }}</div>
+      <small class="text-muted">Total Tasks</small>
+    </a>
+  </div>
+  <div class="col-6 col-md">
+    <a href="{{ url_for('admin.tasks', status='ASSIGNED') }}" class="card text-center p-2 text-decoration-none {% if current_status == 'ASSIGNED' %}border-primary bg-light{% endif %}">
+      <div class="fs-5 fw-bold text-secondary">{{ counts.assigned }}</div>
+      <small class="text-muted">Assigned</small>
+    </a>
+  </div>
+  <div class="col-6 col-md">
+    <a href="{{ url_for('admin.tasks', status='IN_PROGRESS') }}" class="card text-center p-2 text-decoration-none {% if current_status == 'IN_PROGRESS' %}border-primary bg-light{% endif %}">
+      <div class="fs-5 fw-bold text-primary">{{ counts.in_progress }}</div>
+      <small class="text-muted">In Progress</small>
+    </a>
+  </div>
+  <div class="col-6 col-md">
+    <a href="{{ url_for('admin.tasks', status='COMPLETED') }}" class="card text-center p-2 text-decoration-none {% if current_status == 'COMPLETED' %}border-primary bg-light{% endif %}">
+      <div class="fs-5 fw-bold text-success">{{ counts.completed }}</div>
+      <small class="text-muted">Completed</small>
+    </a>
+  </div>
+  <div class="col-6 col-md">
+    <a href="{{ url_for('admin.tasks', status='OVERDUE') }}" class="card text-center p-2 text-decoration-none {% if current_status == 'OVERDUE' %}border-danger bg-danger-subtle{% endif %}">
+      <div class="fs-5 fw-bold text-danger">{{ counts.overdue }}</div>
+      <small class="text-danger">Overdue</small>
+    </a>
+  </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="card mb-4 p-3">
+  <form method="GET" action="{{ url_for('admin.tasks') }}" class="row g-2 align-items-center">
+    <div class="col-md-4">
+      <input type="text" class="form-control form-control-sm" name="search" placeholder="Search task, patient, or nurse..." value="{{ current_search }}">
+    </div>
+    <div class="col-md-3">
+      <select class="form-select form-select-sm" name="priority">
+        <option value="">All Priorities</option>
+        <option value="CRITICAL" {% if current_priority == 'CRITICAL' %}selected{% endif %}>CRITICAL</option>
+        <option value="HIGH" {% if current_priority == 'HIGH' %}selected{% endif %}>HIGH</option>
+        <option value="MEDIUM" {% if current_priority == 'MEDIUM' %}selected{% endif %}>MEDIUM</option>
+        <option value="LOW" {% if current_priority == 'LOW' %}selected{% endif %}>LOW</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select class="form-select form-select-sm" name="status">
+        <option value="">All Statuses</option>
+        <option value="ASSIGNED" {% if current_status == 'ASSIGNED' %}selected{% endif %}>ASSIGNED</option>
+        <option value="IN_PROGRESS" {% if current_status == 'IN_PROGRESS' %}selected{% endif %}>IN PROGRESS</option>
+        <option value="COMPLETED" {% if current_status == 'COMPLETED' %}selected{% endif %}>COMPLETED</option>
+        <option value="OVERDUE" {% if current_status == 'OVERDUE' %}selected{% endif %}>OVERDUE</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary btn-sm w-100">Apply Filter</button>
+    </div>
+  </form>
+</div>
+
+<!-- Tasks Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Task Title & Instructions</th>
+          <th>Patient Location</th>
+          <th>Assigned Nurse</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Due Time</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr>
+          <td>
+            <div class="fw-semibold text-dark">{{ t.task_title }}</div>
+            <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;">{{ t.description }}</small>
+          </td>
+          <td>
+            <div class="fw-medium">{{ t.patient_name }}</div>
+            <small class="text-muted">{{ t.ward_name }} - {{ t.room_number }}</small>
+          </td>
+          <td>
+            <span class="fw-medium">{{ t.nurse_name }}</span>
+          </td>
+          <td>
+            <span class="badge {{ t.priority | priority_badge }}">{{ t.priority }}</span>
+          </td>
+          <td>
+            <span class="badge {{ t.status | status_badge }}">{{ t.status }}</span>
+          </td>
+          <td>
+            <small class="{% if t.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">
+              {{ t.due_time | format_dt }}
+            </small>
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-secondary me-1" onclick="loadTaskDetailsModal({{ t.task_id }})" data-bs-toggle="modal" data-bs-target="#taskDetailModal" title="View Details">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reassignModal{{ t.task_id }}" title="Reassign Nurse">
+              <i class="fa-solid fa-user-pen"></i>
+            </button>
+          </td>
+        </tr>
+
+        <!-- Reassign Modal -->
+        <div class="modal fade" id="reassignModal{{ t.task_id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <form method="POST" action="{{ url_for('admin.reassign_task') }}">
+                <input type="hidden" name="task_id" value="{{ t.task_id }}">
+                <div class="modal-header">
+                  <h5 class="modal-title">Reassign Task</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <p class="small text-muted mb-2">Reassign <strong>{{ t.task_title }}</strong> for Patient <strong>{{ t.patient_name }}</strong>:</p>
+                  <label class="form-label small fw-semibold">Select New Nurse</label>
+                  <select class="form-select" name="nurse_id" required>
+                    {% for n in nurses %}
+                    <option value="{{ n.nurse_id }}" {% if n.nurse_id == t.nurse_id %}selected{% endif %}>
+                      {{ n.name }} ({{ n.department_name }})
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-primary btn-sm">Confirm Reassignment</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">No tasks match your search criteria.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

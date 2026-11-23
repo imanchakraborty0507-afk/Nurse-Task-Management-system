@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Nurse Profile - MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Nurse Professional Profile</h2>
+    <p class="page-subtitle">Your clinical credentials, licensing, and hospital department record.</p>
+  </div>
+</div>
+
+<div class="card p-4 mx-auto" style="max-width: 700px;">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="user-avatar-badge fs-3" style="width: 64px; height: 64px; background: #ccfbf1; color: #0d9488;">
+      {{ nurse.name[:2] | upper }}
+    </div>
+    <div>
+      <h3 class="mb-0 fw-bold">{{ nurse.name }}</h3>
+      <span class="badge bg-teal text-white" style="background:#0d9488;">{{ nurse.department_name }}</span>
+      <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">{{ nurse.employment_status }}</span>
+    </div>
+  </div>
+
+  <table class="table table-borderless">
+    <tr>
+      <td class="text-muted fw-semibold" style="width: 180px;">License Number:</td>
+      <td class="fw-bold"><code>{{ nurse.license_number }}</code></td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Qualification:</td>
+      <td>{{ nurse.qualification }}</td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Department:</td>
+      <td>{{ nurse.department_name }}</td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Contact Phone:</td>
+      <td>{{ nurse.phone }}</td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Email:</td>
+      <td>{{ nurse.email }}</td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Gender & DOB:</td>
+      <td>{{ nurse.gender }} &bull; Born {{ nurse.date_of_birth or 'N/A' }}</td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Date of Joining:</td>
+      <td>{{ nurse.joining_date }}</td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Portal Username:</td>
+      <td><code>@{{ nurse.username }}</code></td>
+    </tr>
+  </table>
+</div>
+{% endblock %}

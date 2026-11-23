@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Monitor Prescribed Tasks - Doctor MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Prescribed Task Monitoring</h2>
+    <p class="page-subtitle">Track completion progress, nurse actions, and clinical audit trail for your patients.</p>
+  </div>
+  <div>
+    <a href="{{ url_for('doctor.create_task') }}" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-plus me-1"></i> New Clinical Order
+    </a>
+  </div>
+</div>
+
+<!-- Status Filters -->
+<div class="card mb-4 p-3">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span class="small fw-semibold text-secondary"><i class="fa-solid fa-filter me-1"></i> Status:</span>
+    <a href="{{ url_for('doctor.tasks') }}" class="btn btn-sm {% if not current_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      All ({{ counts.total }})
+    </a>
+    <a href="{{ url_for('doctor.tasks', status='ASSIGNED') }}" class="btn btn-sm {% if current_status == 'ASSIGNED' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      Assigned ({{ counts.assigned }})
+    </a>
+    <a href="{{ url_for('doctor.tasks', status='IN_PROGRESS') }}" class="btn btn-sm {% if current_status == 'IN_PROGRESS' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      In Progress ({{ counts.in_progress }})
+    </a>
+    <a href="{{ url_for('doctor.tasks', status='COMPLETED') }}" class="btn btn-sm {% if current_status == 'COMPLETED' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      Completed ({{ counts.completed }})
+    </a>
+    <a href="{{ url_for('doctor.tasks', status='OVERDUE') }}" class="btn btn-sm {% if current_status == 'OVERDUE' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+      Overdue ({{ counts.overdue }})
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Order Title & Description</th>
+          <th>Patient Location</th>
+          <th>Assigned Nurse</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Due Time</th>
+          <th class="text-end">Audit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr class="{% if t.is_overdue %}table-danger-subtle{% endif %}">
+          <td>
+            <a href="{{ url_for('doctor.task_details', task_id=t.task_id) }}" class="fw-semibold text-dark text-decoration-none">
+              {{ t.task_title }}
+            </a>
+            <small class="text-muted d-block text-truncate" style="max-width: 250px;">{{ t.description }}</small>
+          </td>
+          <td>
+            <div class="fw-medium">{{ t.patient_name }}</div>
+            <small class="text-muted">{{ t.ward_name }} - {{ t.room_number }}</small>
+          </td>
+          <td>{{ t.nurse_name }}</td>
+          <td><span class="badge {{ t.priority | priority_badge }}">{{ t.priority }}</span></td>
+          <td><span class="badge {{ t.status | status_badge }}">{{ t.status }}</span></td>
+          <td>
+            <div class="small {% if t.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">
+              {{ t.due_time | format_dt }}
+              {% if t.is_overdue %}<span class="badge bg-danger ms-1">OVERDUE</span>{% endif %}
+            </div>
+          </td>
+          <td class="text-end">
+            <a href="{{ url_for('doctor.task_details', task_id=t.task_id) }}" class="btn btn-sm btn-outline-secondary">
+              <i class="fa-solid fa-eye me-1"></i> Details
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">No tasks found matching this criteria.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

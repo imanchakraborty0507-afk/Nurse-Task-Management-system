@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Shift Rostering - Admin MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Shift Configuration & Rostering</h2>
+    <p class="page-subtitle">Configure hospital duty shifts and schedule nursing staff for upcoming days.</p>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Shift Windows -->
+  {% for s in shifts %}
+  <div class="col-md-4">
+    <div class="card h-100 border-top border-3 {% if loop.index == 1 %}border-primary{% elif loop.index == 2 %}border-warning{% else %}border-info{% endif %}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="fw-bold mb-0">{{ s.shift_name }}</h5>
+          <span class="badge bg-light text-dark border">8 Hours</span>
+        </div>
+        <div class="fs-4 fw-bold text-primary mb-1">
+          {{ s.start_time }} &mdash; {{ s.end_time }}
+        </div>
+        <p class="text-muted small mb-0">
+          {% if 'Morning' in s.shift_name %}
+            Primary morning handoff, vital assessments, round medication.
+          {% elif 'Evening' in s.shift_name %}
+            Evening medication, recovery monitoring, family visiting hours.
+          {% else %}
+            Overnight observation, critical vital checks, emergency admissions.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Assign Shift Rota Form -->
+<div class="card">
+  <div class="card-header fw-bold">
+    <i class="fa-solid fa-calendar-check text-primary me-2"></i>Assign Nurse to Shift
+  </div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('admin.assign_shift') }}" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Select Nurse</label>
+        <select class="form-select" name="nurse_id" required>
+          <option value="">-- Choose Nurse --</option>
+          {% for n in nurses %}
+          <option value="{{ n.nurse_id }}">{{ n.name }} ({{ n.department_name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">Select Shift Window</label>
+        <select class="form-select" name="shift_id" required>
+          {% for s in shifts %}
+          <option value="{{ s.shift_id }}">{{ s.shift_name }} ({{ s.start_time }} - {{ s.end_time }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">Duty Date</label>
+        <input type="date" class="form-control" name="assigned_date" value="{{ today }}" required>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="fa-solid fa-calendar-plus me-1"></i> Save Rota
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

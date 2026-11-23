@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Nurses Directory - Admin MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Nursing Staff Roster</h2>
+    <p class="page-subtitle">Manage nurse credentials, department assignments, and employment status.</p>
+  </div>
+  <div>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addNurseModal">
+      <i class="fa-solid fa-user-plus me-1"></i> Register New Nurse
+    </button>
+  </div>
+</div>
+
+<!-- Department Filter Toolbar -->
+<div class="card mb-4 p-3">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="small fw-semibold text-secondary"><i class="fa-solid fa-filter me-1"></i> Department:</span>
+      <a href="{{ url_for('admin.nurses') }}" class="btn btn-sm {% if not selected_dept %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        All ({{ nurses | length }})
+      </a>
+      {% for d in departments %}
+      <a href="{{ url_for('admin.nurses', department_id=d.department_id) }}" class="btn btn-sm {% if selected_dept == d.department_id %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        {{ d.department_name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Nurses Roster Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Nurse Name & Username</th>
+          <th>Department</th>
+          <th>License & Qualification</th>
+          <th>Contact</th>
+          <th>Joining Date</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in nurses %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="user-avatar-badge">{{ n.name[:2] | upper }}</div>
+              <div>
+                <div class="fw-semibold text-dark">{{ n.name }}</div>
+                <small class="text-muted">@{{ n.username }} &bull; {{ n.gender }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">{{ n.department_name }}</span>
+          </td>
+          <td>
+            <div class="small fw-medium">{{ n.license_number }}</div>
+            <small class="text-muted">{{ n.qualification }}</small>
+          </td>
+          <td>
+            <div class="small"><i class="fa-solid fa-phone text-muted me-1"></i>{{ n.phone }}</div>
+            <small class="text-muted"><i class="fa-regular fa-envelope me-1"></i>{{ n.email }}</small>
+          </td>
+          <td>
+            <small class="text-muted">{{ n.joining_date }}</small>
+          </td>
+          <td>
+            {% if n.employment_status == 'ACTIVE' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">ACTIVE</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary border">INACTIVE</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ n.nurse_id }}" title="Edit Profile">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <form method="POST" action="{{ url_for('admin.delete_nurse', nurse_id=n.nurse_id) }}" class="d-inline" onsubmit="return confirm('Remove nurse {{ n.name }}? This will permanently delete associated access.');">
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+
+        <!-- Edit Nurse Modal -->
+        <div class="modal fade" id="editModal{{ n.nurse_id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <form method="POST" action="{{ url_for('admin.edit_nurse', nurse_id=n.nurse_id) }}">
+                <div class="modal-header">
+                  <h5 class="modal-title">Edit Nurse: {{ n.name }}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold">Full Name</label>
+                    <input type="text" class="form-control" name="name" value="{{ n.name }}" required>
+                  </div>
+                  <div class="row g-2 mb-3">
+                    <div class="col-6">
+                      <label class="form-label small fw-semibold">Phone</label>
+                      <input type="text" class="form-control" name="phone" value="{{ n.phone }}" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small fw-semibold">Email</label>
+                      <input type="email" class="form-control" name="email" value="{{ n.email }}" required>
+                    </div>
+                  </div>
+                  <div class="row g-2 mb-3">
+                    <div class="col-6">
+                      <label class="form-label small fw-semibold">Gender</label>
+                      <select class="form-select" name="gender">
+                        <option value="Female" {% if n.gender == 'Female' %}selected{% endif %}>Female</option>
+                        <option value="Male" {% if n.gender == 'Male' %}selected{% endif %}>Male</option>
+                        <option value="Other" {% if n.gender == 'Other' %}selected{% endif %}>Other</option>
+                      </select>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small fw-semibold">Date of Birth</label>
+                      <input type="date" class="form-control" name="date_of_birth" value="{{ n.date_of_birth }}">
+                    </div>
+                  </div>
+                  <div class="row g-2 mb-3">
+                    <div class="col-6">
+                      <label class="form-label small fw-semibold">Qualification</label>
+                      <input type="text" class="form-control" name="qualification" value="{{ n.qualification }}" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small fw-semibold">License Number</label>
+                      <input type="text" class="form-control" name="license_number" value="{{ n.license_number }}" required>
+                    </div>
+                  </div>
+                  <div class="row g-2 mb-3">
+                    <div class="col-6">
+                      <label class="form-label small fw-semibold">Department</label>
+                      <select class="form-select" name="department_id" required>
+                        {% for d in departments %}
+                        <option value="{{ d.department_id }}" {% if d.department_id == n.department_id %}selected{% endif %}>{{ d.department_name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small fw-semibold">Employment Status</label>
+                      <select class="form-select" name="employment_status">
+                        <option value="ACTIVE" {% if n.employment_status == 'ACTIVE' %}selected{% endif %}>ACTIVE</option>
+                        <option value="INACTIVE" {% if n.employment_status == 'INACTIVE' %}selected{% endif %}>INACTIVE</option>
+                        <option value="ON_LEAVE" {% if n.employment_status == 'ON_LEAVE' %}selected{% endif %}>ON LEAVE</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">No nurses found matching the selected filter.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Nurse Modal -->
+<div class="modal fade" id="addNurseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin.add_nurse') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Register New Nurse</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Account Username</label>
+              <input type="text" class="form-control" name="username" placeholder="e.g. nurse_alex" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Default Password</label>
+              <input type="password" class="form-control" name="password" placeholder="Defaults to nurse123">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Full Legal Name</label>
+            <input type="text" class="form-control" name="name" placeholder="Nurse Full Name" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Phone Number</label>
+              <input type="tel" class="form-control" name="phone" placeholder="+1 555-0100" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Email Address</label>
+              <input type="email" class="form-control" name="email" placeholder="nurse@hospital.com" required>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Gender</label>
+              <select class="form-select" name="gender">
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Date of Birth</label>
+              <input type="date" class="form-control" name="date_of_birth">
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Qualification</label>
+              <input type="text" class="form-control" name="qualification" placeholder="B.Sc Nursing / RN" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">License Number</label>
+              <input type="text" class="form-control" name="license_number" placeholder="RN-9999" required>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Department</label>
+              <select class="form-select" name="department_id" required>
+                {% for d in departments %}
+                <option value="{{ d.department_id }}">{{ d.department_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Joining Date</label>
+              <input type="date" class="form-control" name="joining_date">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Create Nurse Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

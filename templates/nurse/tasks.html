@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}My Assigned Tasks - Nurse MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">My Clinical Care Tasks</h2>
+    <p class="page-subtitle">Patient care orders assigned to you. Update progress as you execute clinical routines.</p>
+  </div>
+</div>
+
+<!-- Task Status Filters -->
+<div class="card mb-4 p-3">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span class="small fw-semibold text-secondary"><i class="fa-solid fa-filter me-1"></i> Status:</span>
+    <a href="{{ url_for('nurse.tasks') }}" class="btn btn-sm {% if not current_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      All ({{ counts.total }})
+    </a>
+    <a href="{{ url_for('nurse.tasks', status='ASSIGNED') }}" class="btn btn-sm {% if current_status == 'ASSIGNED' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      Assigned ({{ counts.assigned }})
+    </a>
+    <a href="{{ url_for('nurse.tasks', status='IN_PROGRESS') }}" class="btn btn-sm {% if current_status == 'IN_PROGRESS' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      In Progress ({{ counts.in_progress }})
+    </a>
+    <a href="{{ url_for('nurse.tasks', status='COMPLETED') }}" class="btn btn-sm {% if current_status == 'COMPLETED' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      Completed ({{ counts.completed }})
+    </a>
+    <a href="{{ url_for('nurse.tasks', status='OVERDUE') }}" class="btn btn-sm {% if current_status == 'OVERDUE' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+      Overdue ({{ counts.overdue }})
+    </a>
+  </div>
+</div>
+
+<!-- Tasks Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Task Title & Instructions</th>
+          <th>Patient Location</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Due Time</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr class="{% if t.is_overdue %}table-danger-subtle{% endif %}">
+          <td>
+            <a href="{{ url_for('nurse.task_details', task_id=t.task_id) }}" class="fw-semibold text-dark text-decoration-none">
+              {{ t.task_title }}
+            </a>
+            <small class="text-muted d-block text-truncate" style="max-width: 280px;">{{ t.description }}</small>
+            {% if t.notes %}
+              <small class="text-primary d-block mt-1"><i class="fa-regular fa-comment-dots me-1"></i>Has clinical notes</small>
+            {% endif %}
+          </td>
+          <td>
+            <div class="fw-medium">{{ t.patient_name }}</div>
+            <small class="text-muted">{{ t.ward_name }} &bull; Bed {{ t.bed_number }}</small>
+          </td>
+          <td>
+            <span class="badge {{ t.priority | priority_badge }}">{{ t.priority }}</span>
+          </td>
+          <td>
+            <span class="badge {{ t.status | status_badge }}">{{ t.status }}</span>
+          </td>
+          <td>
+            <div class="{% if t.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %} small">
+              {{ t.due_time | format_dt }}
+              {% if t.is_overdue %}
+                <span class="badge bg-danger ms-1">OVERDUE</span>
+              {% endif %}
+            </div>
+          </td>
+          <td class="text-end">
+            <a href="{{ url_for('nurse.task_details', task_id=t.task_id) }}" class="btn btn-sm btn-outline-secondary me-1" title="View Full Details & Notes">
+              <i class="fa-solid fa-eye"></i> Details
+            </a>
+
+            {% if t.status == 'ASSIGNED' or t.status == 'PENDING' %}
+              <form method="POST" action="{{ url_for('nurse.start_task', task_id=t.task_id) }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-primary">
+                  <i class="fa-solid fa-play me-1"></i> Start
+                </button>
+              </form>
+            {% elif t.status == 'IN_PROGRESS' or t.status == 'OVERDUE' %}
+              <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#completeModal{{ t.task_id }}">
+                <i class="fa-solid fa-check me-1"></i> Complete
+              </button>
+            {% else %}
+              <span class="text-success small fw-semibold"><i class="fa-solid fa-circle-check me-1"></i>Done</span>
+            {% endif %}
+          </td>
+        </tr>
+
+        <!-- Complete Task Modal -->
+        <div class="modal fade" id="completeModal{{ t.task_id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <form method="POST" action="{{ url_for('nurse.complete_task', task_id=t.task_id) }}">
+                <div class="modal-header">
+                  <h5 class="modal-title">Complete Task: {{ t.task_title }}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <p class="small text-muted">Confirm completion of this task for patient <strong>{{ t.patient_name }}</strong>.</p>
+                  <label class="form-label small fw-semibold">Clinical Completion Notes (Optional)</label>
+                  <textarea class="form-control" name="notes" rows="3" placeholder="Record administered medication dosages, vitals, patient observations..."></textarea>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-success btn-sm">Mark Task Completed</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">No tasks found matching this criteria.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

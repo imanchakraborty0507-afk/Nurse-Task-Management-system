@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Doctor Dashboard - MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Welcome, Dr. {{ doctor.name }}</h2>
+    <p class="page-subtitle">{{ doctor.specialization }} &bull; Department: {{ doctor.department_name }}</p>
+  </div>
+  <div>
+    <a href="{{ url_for('doctor.create_task') }}" class="btn btn-primary">
+      <i class="fa-solid fa-plus me-1"></i> Prescribe / Assign Task
+    </a>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card primary">
+      <div>
+        <div class="metric-label">Admitted Patients</div>
+        <div class="metric-value text-primary">{{ total_patients }}</div>
+        <small class="text-muted">Currently hospitalized</small>
+      </div>
+      <div class="stat-icon primary"><i class="fa-solid fa-bed-pulse"></i></div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card warning">
+      <div>
+        <div class="metric-label">Pending / In Progress</div>
+        <div class="metric-value text-warning">{{ task_counts.assigned + task_counts.in_progress }}</div>
+        <small class="text-muted">Awaiting completion</small>
+      </div>
+      <div class="stat-icon warning"><i class="fa-solid fa-list-check"></i></div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card success">
+      <div>
+        <div class="metric-label">Tasks Completed</div>
+        <div class="metric-value text-success">{{ task_counts.completed }}</div>
+        <small class="text-muted">By care team</small>
+      </div>
+      <div class="stat-icon success"><i class="fa-solid fa-clipboard-check"></i></div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card teal">
+      <div>
+        <div class="metric-label">Department Nurses</div>
+        <div class="metric-value text-teal">{{ nurses | length }}</div>
+        <small class="text-muted">Available on roster</small>
+      </div>
+      <div class="stat-icon teal"><i class="fa-solid fa-user-nurse"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- My Prescribed Tasks -->
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="fa-solid fa-stethoscope text-primary me-2"></i>Recent Clinical Orders</span>
+        <a href="{{ url_for('doctor.tasks') }}" class="btn btn-sm btn-link text-decoration-none">Monitor All &rarr;</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Patient</th>
+              <th>Assigned Nurse</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Due Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tasks %}
+            <tr>
+              <td>
+                <a href="{{ url_for('doctor.task_details', task_id=t.task_id) }}" class="fw-semibold text-dark text-decoration-none">
+                  {{ t.task_title }}
+                </a>
+              </td>
+              <td>
+                <div>{{ t.patient_name }}</div>
+                <small class="text-muted">{{ t.ward_name }} - {{ t.room_number }}</small>
+              </td>
+              <td>{{ t.nurse_name }}</td>
+              <td><span class="badge {{ t.priority | priority_badge }}">{{ t.priority }}</span></td>
+              <td><span class="badge {{ t.status | status_badge }}">{{ t.status }}</span></td>
+              <td><small class="text-muted">{{ t.due_time | format_dt }}</small></td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">No tasks assigned yet. Click "Assign Task" to create one.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admitted Patients Preview -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="fa-solid fa-hospital-user text-teal me-2"></i>Inpatients</span>
+        <a href="{{ url_for('doctor.patients') }}" class="btn btn-sm btn-link text-decoration-none">All Patients &rarr;</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for p in patients %}
+          <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+            <div>
+              <div class="fw-semibold text-dark">{{ p.name }}</div>
+              <small class="text-muted">{{ p.gender }}, {{ p.age }} yrs &bull; {{ p.ward_name }}</small>
+            </div>
+            <div>
+              <a href="{{ url_for('doctor.create_task', patient_id=p.patient_id) }}" class="btn btn-sm btn-outline-primary" title="Assign Care Task">
+                <i class="fa-solid fa-plus"></i>
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

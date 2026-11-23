@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Hospital Nurse Task Management{% endblock %}</title>
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- FontAwesome 6 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="appSidebar">
+      <a href="{{ url_for('auth.dashboard') }}" class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-staff-snake"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">MediCare Hub</span>
+          <span class="brand-subtitle">Task & Shift Center</span>
+        </div>
+      </a>
+
+      <nav class="sidebar-nav">
+        {% if current_user_role == 'ADMIN' %}
+          <div class="nav-section-title">Administration</div>
+          <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-chart-line"></i> Dashboard
+          </a>
+          <a href="{{ url_for('admin.tasks') }}" class="sidebar-link {% if request.endpoint == 'admin.tasks' %}active{% endif %}">
+            <i class="fa-solid fa-list-check"></i> Master Task Board
+          </a>
+          <a href="{{ url_for('admin.attendance') }}" class="sidebar-link {% if request.endpoint == 'admin.attendance' %}active{% endif %}">
+            <i class="fa-solid fa-clipboard-user"></i> Attendance Ledger
+          </a>
+          <a href="{{ url_for('admin.reports') }}" class="sidebar-link {% if request.endpoint == 'admin.reports' %}active{% endif %}">
+            <i class="fa-solid fa-chart-pie"></i> Visual Reports
+          </a>
+
+          <div class="nav-section-title">Hospital Roster</div>
+          <a href="{{ url_for('admin.nurses') }}" class="sidebar-link {% if request.endpoint == 'admin.nurses' %}active{% endif %}">
+            <i class="fa-solid fa-user-nurse"></i> Nurses Directory
+          </a>
+          <a href="{{ url_for('admin.doctors') }}" class="sidebar-link {% if request.endpoint == 'admin.doctors' %}active{% endif %}">
+            <i class="fa-solid fa-user-doctor"></i> Doctors Directory
+          </a>
+          <a href="{{ url_for('admin.shifts') }}" class="sidebar-link {% if request.endpoint == 'admin.shifts' %}active{% endif %}">
+            <i class="fa-solid fa-business-time"></i> Shift Rostering
+          </a>
+          <a href="{{ url_for('admin.departments') }}" class="sidebar-link {% if request.endpoint == 'admin.departments' %}active{% endif %}">
+            <i class="fa-solid fa-hospital"></i> Departments & Wards
+          </a>
+
+        {% elif current_user_role == 'DOCTOR' %}
+          <div class="nav-section-title">Clinical Workspace</div>
+          <a href="{{ url_for('doctor.dashboard') }}" class="sidebar-link {% if request.endpoint == 'doctor.dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-heart-pulse"></i> Doctor Dashboard
+          </a>
+          <a href="{{ url_for('doctor.create_task') }}" class="sidebar-link {% if request.endpoint == 'doctor.create_task' %}active{% endif %}">
+            <i class="fa-solid fa-calendar-plus"></i> Assign New Task
+          </a>
+          <a href="{{ url_for('doctor.tasks') }}" class="sidebar-link {% if request.endpoint == 'doctor.tasks' %}active{% endif %}">
+            <i class="fa-solid fa-list-check"></i> Active Tasks Monitor
+          </a>
+
+          <div class="nav-section-title">Directory</div>
+          <a href="{{ url_for('doctor.patients') }}" class="sidebar-link {% if request.endpoint == 'doctor.patients' %}active{% endif %}">
+            <i class="fa-solid fa-bed-pulse"></i> Admitted Patients
+          </a>
+          <a href="{{ url_for('doctor.nurses') }}" class="sidebar-link {% if request.endpoint == 'doctor.nurses' %}active{% endif %}">
+            <i class="fa-solid fa-user-nurse"></i> Available Nurses
+          </a>
+
+        {% elif current_user_role == 'NURSE' %}
+          <div class="nav-section-title">Duty Center</div>
+          <a href="{{ url_for('nurse.dashboard') }}" class="sidebar-link {% if request.endpoint == 'nurse.dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-gauge-high"></i> Nurse Dashboard
+          </a>
+          <a href="{{ url_for('nurse.tasks') }}" class="sidebar-link {% if request.endpoint == 'nurse.tasks' %}active{% endif %}">
+            <i class="fa-solid fa-list-check"></i> My Assigned Tasks
+          </a>
+          <a href="{{ url_for('nurse.attendance') }}" class="sidebar-link {% if request.endpoint == 'nurse.attendance' %}active{% endif %}">
+            <i class="fa-solid fa-clock"></i> Attendance & Hours
+          </a>
+          <a href="{{ url_for('nurse.notifications') }}" class="sidebar-link {% if request.endpoint == 'nurse.notifications' %}active{% endif %}">
+            <i class="fa-solid fa-bell"></i> Alerts & Tasks
+          </a>
+        {% endif %}
+
+        <div class="nav-section-title">Account</div>
+        <a href="{{ url_for('auth.profile') }}" class="sidebar-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
+          <i class="fa-solid fa-id-card"></i> My Profile
+        </a>
+      </nav>
+
+      <!-- Sidebar User Footer -->
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar-badge">
+            {{ current_user_name[:2] | upper }}
+          </div>
+          <div class="user-info-text">
+            <span class="user-name-text">{{ current_user_name }}</span>
+            <span class="user-role-badge">{{ current_user_role }}</span>
+          </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="text-danger-emphasis ms-2" title="Sign Out">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Sticky Topbar -->
+      <header class="top-navbar">
+        <div class="top-navbar-left">
+          <button class="btn btn-sm btn-light d-lg-none" id="sidebarToggle" aria-label="Toggle Navigation">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div>
+            <span class="badge bg-light text-secondary border me-2">
+              <i class="fa-regular fa-calendar me-1"></i> {{ today_date }}
+            </span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="liveClock">
+              --:--:--
+            </span>
+          </div>
+        </div>
+
+        <div class="top-navbar-right">
+          <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle d-none d-sm-inline-block">
+            <i class="fa-solid fa-hospital me-1"></i> {{ current_department }}
+          </span>
+
+          <!-- Notifications Bell -->
+          {% if current_user_role == 'NURSE' %}
+            <a href="{{ url_for('nurse.notifications') }}" class="notif-bell-btn" title="View Notifications">
+              <i class="fa-solid fa-bell"></i>
+              {% if unread_notifications_count > 0 %}
+                <span class="notif-counter" id="notifBadgeCount">{{ unread_notifications_count }}</span>
+              {% endif %}
+            </a>
+          {% endif %}
+
+          <!-- Profile / Sign Out dropdown -->
+          <div class="dropdown">
+            <button class="btn btn-light btn-sm dropdown-toggle rounded-pill px-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa-solid fa-circle-user text-primary me-1"></i> {{ current_user_name }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
+              <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fa-regular fa-user me-2"></i>Profile</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-power-off me-2"></i>Sign Out</a></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Body -->
+      <main class="page-container">
+        <!-- Flash Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="container-fluid p-0 mb-3">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                  <div class="me-2">
+                    {% if category == 'success' %}
+                      <i class="fa-solid fa-circle-check fs-5"></i>
+                    {% elif category == 'danger' %}
+                      <i class="fa-solid fa-circle-exclamation fs-5"></i>
+                    {% elif category == 'warning' %}
+                      <i class="fa-solid fa-triangle-exclamation fs-5"></i>
+                    {% else %}
+                      <i class="fa-solid fa-circle-info fs-5"></i>
+                    {% endif %}
+                  </div>
+                  <div>{{ message }}</div>
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Shared Details Modal -->
+  <div class="modal fade" id="taskDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Clinical Task Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="taskModalBody">
+          <!-- Dynamically populated by JS -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Custom Scripts -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

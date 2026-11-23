@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Notifications & Alerts - Nurse MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Notifications & System Alerts</h2>
+    <p class="page-subtitle">Real-time alerts for new task assignments, physician instructions, and schedule updates.</p>
+  </div>
+  <div>
+    <button class="btn btn-outline-secondary btn-sm" onclick="markAllNotificationsRead()">
+      <i class="fa-solid fa-check-double me-1"></i> Mark All as Read
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="list-group list-group-flush">
+    {% for n in notifications %}
+    <div class="list-group-item list-group-item-action p-3 {% if not n.is_read %}bg-light border-start border-4 border-primary{% endif %}" id="notif-item-{{ n.notification_id }}">
+      <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+        <h6 class="mb-0 fw-bold {% if not n.is_read %}text-primary{% else %}text-dark{% endif %}">
+          <i class="fa-solid fa-bell me-2 text-warning"></i>{{ n.title }}
+        </h6>
+        <small class="text-muted">{{ n.created_at | format_dt }}</small>
+      </div>
+      <p class="mb-2 text-secondary">{{ n.message }}</p>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem;">{{ n.notification_type }}</span>
+        {% if not n.is_read %}
+          <button class="btn btn-link btn-sm p-0 text-decoration-none" onclick="markNotificationRead({{ n.notification_id }})">
+            <small><i class="fa-solid fa-check me-1"></i>Mark Read</small>
+          </button>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="p-5 text-center text-muted">
+      <i class="fa-regular fa-bell-slash fs-1 text-secondary mb-2"></i>
+      <p class="mb-0">No notifications in your inbox.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

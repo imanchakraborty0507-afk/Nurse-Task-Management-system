@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Nurse Duty Dashboard - MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Welcome, Nurse {{ nurse.name }}</h2>
+    <p class="page-subtitle">{{ nurse.department_name }} Department &bull; License: {{ nurse.license_number }}</p>
+  </div>
+  <div>
+    <span class="badge bg-light text-secondary border px-3 py-2 fs-6">
+      <i class="fa-solid fa-clock me-1 text-primary"></i> Current Date: {{ today }}
+    </span>
+  </div>
+</div>
+
+<!-- Quick Action Attendance Banner -->
+<div class="attendance-banner">
+  <div class="att-banner-content">
+    <h4>
+      <i class="fa-solid fa-business-time me-2"></i>
+      Shift: {{ att_info.shift.shift_name if att_info.shift else 'Morning Shift' }} 
+      ({{ att_info.shift.start_time }} &ndash; {{ att_info.shift.end_time }})
+    </h4>
+    <p>
+      {% if not att_info.is_checked_in %}
+        You are currently <strong>NOT CHECKED IN</strong> for today's shift. Please record your check-in.
+      {% elif not att_info.is_checked_out %}
+        Checked in at <strong>{{ att_info.record.check_in | format_dt("%I:%M %p") }}</strong> &bull; 
+        Active duty: <strong>{{ duration_info.hours_str }}</strong>
+        {% if att_info.status == 'LATE' %}
+          <span class="badge bg-warning text-dark ms-2">LATE ARRIVAL</span>
+        {% endif %}
+      {% else %}
+        Shift completed! Checked out at <strong>{{ att_info.record.check_out | format_dt("%I:%M %p") }}</strong>. Total duty: <strong>{{ att_info.record.total_working_hours }} hours</strong>.
+      {% endif %}
+    </p>
+  </div>
+  <div class="att-banner-actions">
+    {% if not att_info.is_checked_in %}
+      <form method="POST" action="{{ url_for('nurse.check_in') }}">
+        <button type="submit" class="btn btn-success btn-lg shadow-sm">
+          <i class="fa-solid fa-right-to-bracket me-2"></i> One-Click Check-In
+        </button>
+      </form>
+    {% elif not att_info.is_checked_out %}
+      <form method="POST" action="{{ url_for('nurse.check_out') }}" onsubmit="return confirm('Ready to Check Out and conclude shift duty?');">
+        <button type="submit" class="btn btn-danger btn-lg shadow-sm">
+          <i class="fa-solid fa-right-from-bracket me-2"></i> One-Click Check-Out
+        </button>
+      </form>
+    {% else %}
+      <span class="badge bg-white text-success fs-6 py-2 px-3 fw-bold">
+        <i class="fa-solid fa-circle-check me-1"></i> Shift Logged
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Task Overview Metric Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card primary">
+      <div>
+        <div class="metric-label">Assigned Tasks</div>
+        <div class="metric-value text-primary">{{ task_counts.assigned }}</div>
+        <small class="text-muted">Awaiting start</small>
+      </div>
+      <div class="stat-icon primary"><i class="fa-solid fa-clipboard-list"></i></div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card warning">
+      <div>
+        <div class="metric-label">In Progress</div>
+        <div class="metric-value text-warning">{{ task_counts.in_progress }}</div>
+        <small class="text-muted">Under active care</small>
+      </div>
+      <div class="stat-icon warning"><i class="fa-solid fa-spinner fa-spin"></i></div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card success">
+      <div>
+        <div class="metric-label">Completed Tasks</div>
+        <div class="metric-value text-success">{{ task_counts.completed }}</div>
+        <small class="text-muted">Finished today</small>
+      </div>
+      <div class="stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card danger">
+      <div>
+        <div class="metric-label">Overdue Tasks</div>
+        <div class="metric-value text-danger">{{ task_counts.overdue }}</div>
+        <small class="text-danger fw-bold">Needs immediate action</small>
+      </div>
+      <div class="stat-icon danger"><i class="fa-solid fa-bell"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Assigned Tasks Quick Action Board -->
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="fa-solid fa-list-check text-primary me-2"></i>My Active Tasks</span>
+        <a href="{{ url_for('nurse.tasks') }}" class="btn btn-sm btn-link text-decoration-none">View All &rarr;</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Task & Instructions</th>
+              <th>Patient</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tasks %}
+            <tr>
+              <td>
+                <a href="{{ url_for('nurse.task_details', task_id=t.task_id) }}" class="fw-semibold text-dark text-decoration-none">
+                  {{ t.task_title }}
+                </a>
+                <small class="text-muted d-block text-truncate" style="max-width: 200px;">{{ t.description }}</small>
+              </td>
+              <td>
+                <div class="fw-medium">{{ t.patient_name }}</div>
+                <small class="text-muted">Bed: {{ t.bed_number }} ({{ t.room_number }})</small>
+              </td>
+              <td>
+                <span class="badge {{ t.priority | priority_badge }}">{{ t.priority }}</span>
+              </td>
+              <td>
+                <span class="badge {{ t.status | status_badge }}">{{ t.status }}</span>
+              </td>
+              <td>
+                {% if t.status == 'ASSIGNED' or t.status == 'PENDING' %}
+                  <form method="POST" action="{{ url_for('nurse.start_task', task_id=t.task_id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-primary">Start</button>
+                  </form>
+                {% elif t.status == 'IN_PROGRESS' or t.status == 'OVERDUE' %}
+                  <a href="{{ url_for('nurse.task_details', task_id=t.task_id) }}" class="btn btn-sm btn-success">Complete</a>
+                {% else %}
+                  <span class="text-success small fw-semibold"><i class="fa-solid fa-check me-1"></i>Done</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">No tasks currently assigned to you.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Alerts / Notifications -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="fa-solid fa-bell text-warning me-2"></i>Recent Alerts</span>
+        <a href="{{ url_for('nurse.notifications') }}" class="btn btn-sm btn-link text-decoration-none">All &rarr;</a>
+      </div>
+      <div class="card-body p-3">
+        {% for n in notifications %}
+        <div class="border-bottom pb-2 mb-2">
+          <div class="d-flex justify-content-between">
+            <strong class="small text-dark">{{ n.title }}</strong>
+            <small class="text-muted">{{ n.created_at | format_dt("%H:%M") }}</small>
+          </div>
+          <p class="small text-secondary mb-0">{{ n.message }}</p>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4 small">No unread notifications.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

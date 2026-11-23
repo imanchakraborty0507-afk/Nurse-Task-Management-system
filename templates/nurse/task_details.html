@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Task Details - MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{{ url_for('nurse.tasks') }}" class="text-secondary small text-decoration-none mb-1 d-inline-block">
+      <i class="fa-solid fa-arrow-left me-1"></i> Back to Task Board
+    </a>
+    <h2 class="page-title">{{ task.task_title }}</h2>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge {{ task.priority | priority_badge }} fs-6">{{ task.priority }} PRIORITY</span>
+    <span class="badge {{ task.status | status_badge }} fs-6">{{ task.status }}</span>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Task Details & Patient Info -->
+  <div class="col-lg-7">
+    <div class="card mb-4">
+      <div class="card-header fw-bold">
+        <i class="fa-solid fa-file-waveform text-primary me-2"></i>Clinical Order Specifications
+      </div>
+      <div class="card-body">
+        <h5 class="fw-bold text-dark mb-2">Instructions</h5>
+        <div class="p-3 bg-light rounded border mb-4" style="white-space: pre-wrap;">{{ task.description }}</div>
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="small text-muted fw-semibold">Patient Name</div>
+            <div class="fw-bold fs-6">{{ task.patient_name }}</div>
+            <small class="text-secondary">{{ task.ward_name }} &bull; Bed {{ task.bed_number }} (Room {{ task.room_number }})</small>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-muted fw-semibold">Assigned By Physician</div>
+            <div class="fw-bold fs-6">Dr. {{ task.assigned_by_name }}</div>
+            <small class="text-secondary">Assigned on {{ task.created_at | format_dt }}</small>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-muted fw-semibold">Scheduled Deadline</div>
+            <div class="fw-bold fs-6 {% if task.is_overdue %}text-danger{% endif %}">
+              {{ task.due_time | format_dt }}
+              {% if task.is_overdue %}<span class="badge bg-danger ms-1">OVERDUE</span>{% endif %}
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="small text-muted fw-semibold">Completion Timestamp</div>
+            <div class="fw-bold fs-6">{{ task.completed_at | format_dt if task.completed_at else 'Not completed yet' }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Footer -->
+      <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+        <div>
+          {% if task.status == 'ASSIGNED' %}
+            <form method="POST" action="{{ url_for('nurse.start_task', task_id=task.task_id) }}">
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-play me-1"></i> Start Execution
+              </button>
+            </form>
+          {% elif task.status == 'IN_PROGRESS' or task.status == 'OVERDUE' %}
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#completeTaskModal">
+              <i class="fa-solid fa-check me-1"></i> Complete Task
+            </button>
+          {% else %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle fs-6">
+              <i class="fa-solid fa-check-double me-1"></i> Task Completed
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Clinical Notes Section -->
+    <div class="card">
+      <div class="card-header fw-bold">
+        <i class="fa-regular fa-comment-dots text-primary me-2"></i>Clinical Notes & Remarks
+      </div>
+      <div class="card-body">
+        {% if task.notes %}
+          <div class="p-3 bg-light rounded border mb-3" style="white-space: pre-wrap; font-family: inherit;">{{ task.notes }}</div>
+        {% else %}
+          <p class="text-muted small">No clinical notes recorded yet.</p>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('nurse.add_note', task_id=task.task_id) }}">
+          <label class="form-label small fw-semibold">Add New Observation / Note</label>
+          <div class="input-group">
+            <input type="text" class="form-control" name="note" placeholder="Type clinical remark..." required>
+            <button class="btn btn-outline-primary" type="submit">Append Note</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Trail History -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header fw-bold">
+        <i class="fa-solid fa-clock-rotate-left text-teal me-2"></i>Audit History Log
+      </div>
+      <div class="card-body p-3" style="max-height: 520px; overflow-y: auto;">
+        <div class="timeline">
+          {% for log in logs %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="d-flex justify-content-between align-items-start">
+              <strong class="small text-dark">{{ log.username }} ({{ log.role }})</strong>
+              <small class="text-muted">{{ log.timestamp | format_dt("%H:%M") }}</small>
+            </div>
+            <div class="small text-secondary">{{ log.comment }}</div>
+            {% if log.new_status %}
+              <span class="badge {{ log.new_status | status_badge }} mt-1" style="font-size: 0.65rem;">{{ log.new_status }}</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Complete -->
+<div class="modal fade" id="completeTaskModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('nurse.complete_task', task_id=task.task_id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Complete Task</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted">You are finishing task <strong>{{ task.task_title }}</strong>.</p>
+          <label class="form-label small fw-semibold">Final Remarks / Vitals Recorded</label>
+          <textarea class="form-control" name="notes" rows="3" placeholder="e.g. Dose administered, patient resting comfortably..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success btn-sm">Confirm & Complete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

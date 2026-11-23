@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Admin Profile - MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Administrator Profile</h2>
+    <p class="page-subtitle">Hospital system credentials and administrative account details.</p>
+  </div>
+</div>
+
+<div class="card p-4 mx-auto" style="max-width: 600px;">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="user-avatar-badge fs-4" style="width: 56px; height: 56px;">
+      AD
+    </div>
+    <div>
+      <h4 class="mb-0 fw-bold">System Administrator</h4>
+      <span class="badge bg-danger-subtle text-danger border border-danger-subtle">HOSPITAL ADMIN</span>
+    </div>
+  </div>
+
+  <table class="table table-borderless">
+    <tr>
+      <td class="text-muted fw-semibold" style="width: 150px;">Username:</td>
+      <td class="fw-bold">{{ user.username }}</td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Email:</td>
+      <td>{{ user.email or 'admin@hospital.org' }}</td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Account Role:</td>
+      <td><span class="badge bg-danger text-white">ADMIN</span></td>
+    </tr>
+    <tr>
+      <td class="text-muted fw-semibold">Access Level:</td>
+      <td>Full Hospital System Access (CRUD Nurses, Doctors, Tasks, Shifts, Attendance, Reports)</td>
+    </tr>
+  </table>
+</div>
+{% endblock %}

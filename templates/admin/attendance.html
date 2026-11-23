@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Attendance Ledger - Admin MediCare{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-title">Hospital Attendance & Working Hours Ledger</h2>
+    <p class="page-subtitle">Track staff check-ins, check-outs, punctuality, and overtime duration.</p>
+  </div>
+</div>
+
+<!-- Attendance Stats Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card teal">
+      <div>
+        <div class="metric-label">Checked-In Staff</div>
+        <div class="metric-value text-teal">{{ stats.present_count }}</div>
+        <small class="text-muted">On duty today</small>
+      </div>
+      <div class="stat-icon teal"><i class="fa-solid fa-user-check"></i></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card warning">
+      <div>
+        <div class="metric-label">Late Arrivals</div>
+        <div class="metric-value text-warning">{{ stats.late_count }}</div>
+        <small class="text-muted">> 15 mins after shift start</small>
+      </div>
+      <div class="stat-icon warning"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card primary">
+      <div>
+        <div class="metric-label">Completed Shifts</div>
+        <div class="metric-value text-primary">{{ stats.checked_out_count }}</div>
+        <small class="text-muted">Checked out</small>
+      </div>
+      <div class="stat-icon primary"><i class="fa-solid fa-clipboard-check"></i></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card success">
+      <div>
+        <div class="metric-label">Total Logged Hours</div>
+        <div class="metric-value text-success">{{ stats.total_hours }}h</div>
+        <small class="text-muted">Accumulated duty time</small>
+      </div>
+      <div class="stat-icon success"><i class="fa-solid fa-hourglass-half"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Toolbar -->
+<div class="card mb-4 p-3">
+  <form method="GET" action="{{ url_for('admin.attendance') }}" class="row g-2 align-items-center">
+    <div class="col-auto">
+      <span class="small fw-semibold text-secondary"><i class="fa-solid fa-filter me-1"></i> Filter Date:</span>
+    </div>
+    <div class="col-auto">
+      <input type="date" class="form-control form-control-sm" name="date" value="{{ selected_date }}">
+    </div>
+    <div class="col-auto">
+      <select class="form-select form-select-sm" name="department_id">
+        <option value="">All Departments</option>
+        {% for d in departments %}
+        <option value="{{ d.department_id }}" {% if selected_dept == d.department_id %}selected{% endif %}>{{ d.department_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      <a href="{{ url_for('admin.attendance') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Ledger Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Nurse</th>
+          <th>Department</th>
+          <th>Shift Window</th>
+          <th>Actual Check-In</th>
+          <th>Actual Check-Out</th>
+          <th>Working Hours</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in records %}
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ a.nurse_name }}</div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">{{ a.department_name }}</span>
+          </td>
+          <td>
+            <div class="small fw-semibold">{{ a.shift_name }}</div>
+            <small class="text-muted">{{ a.scheduled_start }} &ndash; {{ a.scheduled_end }}</small>
+          </td>
+          <td>
+            {% if a.check_in %}
+              <span class="text-dark fw-medium">{{ a.check_in | format_dt("%I:%M %p") }}</span>
+            {% else %}
+              <span class="text-muted">&mdash;</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.check_out %}
+              <span class="text-dark fw-medium">{{ a.check_out | format_dt("%I:%M %p") }}</span>
+            {% else %}
+              <span class="badge bg-primary-subtle text-primary">In Progress</span>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ a.total_working_hours }} hrs</strong>
+            {% if a.total_working_hours > 8.0 %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1">Overtime</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.status == 'PRESENT' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">PRESENT</span>
+            {% elif a.status == 'LATE' %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">LATE</span>
+            {% elif a.status == 'HALF_DAY' %}
+              <span class="badge bg-info-subtle text-info border">HALF DAY</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary">{{ a.status }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">No attendance records found for this date.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
